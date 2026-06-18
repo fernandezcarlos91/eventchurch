@@ -1,0 +1,84 @@
+<!-- templates/lista_eventos.html -->
+{% extends 'base.html' %}
+
+{% block contenido %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h2><i class="fas fa-calendar-alt me-2 text-success"></i>{{ titulo }}</h2>
+    <span class="badge bg-success fs-6">{{ eventos|length }} eventos</span>
+</div>
+
+{% if eventos %}
+<div class="table-responsive">
+    <table class="table table-bordered table-hover bg-white align-middle">
+        <thead class="table-success">
+            <tr>
+                <th>#</th>
+                <th>Nombre</th>
+                <th>Fechas</th>
+                <th>Tipo</th>
+                <th>Estado</th>
+                <th>Progreso</th>
+                <th class="text-center">Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for evento in eventos %}
+            <tr>
+                <td class="text-center text-muted">{{ evento.id }}</td>
+                <td>
+                    <strong>{{ evento.nombre }}</strong>
+                    <br><small class="text-muted">{{ evento.descripcion or 'Sin descripción' }}</small>
+                </td>
+                <td>
+                    <small>{{ evento.fecha_inicio }} → {{ evento.fecha_fin }}</small>
+                </td>
+                <td>
+                    <span class="badge bg-secondary">{{ evento.tipo_evento }}</span>
+                </td>
+                <td>
+                    {% if evento.estado == 'PLANEADO' %}
+                        <span class="badge bg-secondary">Planeado</span>
+                    {% elif evento.estado == 'EN_PREPARACION' %}
+                        <span class="badge bg-warning text-dark">En preparación</span>
+                    {% elif evento.estado == 'EN_CURSO' %}
+                        <span class="badge bg-primary">En curso</span>
+                    {% elif evento.estado == 'FINALIZADO' %}
+                        <span class="badge bg-success">Finalizado</span>
+                    {% else %}
+                        <span class="badge bg-danger">Cancelado</span>
+                    {% endif %}
+                </td>
+                <td>
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="fw-bold">{{ evento.porcentaje_avance }}%</span>
+                        <div class="progress flex-grow-1" style="height: 15px;">
+                            <div class="progress-bar 
+                                {% if evento.porcentaje_avance < 30 %}bg-danger
+                                {% elif evento.porcentaje_avance < 70 %}bg-warning
+                                {% else %}bg-success{% endif %}" 
+                                role="progressbar" 
+                                style="width: {{ evento.porcentaje_avance }}%;" 
+                                aria-valuenow="{{ evento.porcentaje_avance }}" 
+                                aria-valuemin="0" 
+                                aria-valuemax="100">
+                            </div>
+                        </div>
+                    </div>
+                </td>
+                <td class="text-center">
+                    <a href="/api/eventos/{{ evento.id }}/" class="btn btn-sm btn-outline-info" title="Ver JSON">
+                        <i class="fas fa-code"></i>
+                    </a>
+                </td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% else %}
+<div class="alert alert-info text-center">
+    <i class="fas fa-info-circle me-2"></i>No hay eventos registrados.
+</div>
+{% endif %}
+
+{% endblock %}

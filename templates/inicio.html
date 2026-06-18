@@ -1,0 +1,62 @@
+<!-- templates/inicio.html -->
+{% extends 'base.html' %}
+
+{% block contenido %}
+<div class="row">
+    <div class="col-12 text-center mb-4">
+        <h1 class="display-4 fw-bold text-success">
+            <i class="fas fa-church me-2"></i>EventChurch
+        </h1>
+        <p class="lead text-muted">Gestor de Eventos para tu Iglesia</p>
+        <hr class="w-50 mx-auto">
+    </div>
+</div>
+
+<div class="row g-4">
+    <!-- Tarjeta 1: Total de Eventos -->
+    <div class="col-md-4">
+        <div class="card h-100 border-success shadow-sm">
+            <div class="card-body text-center">
+                <h1 class="display-4 text-success">{{ total_eventos }}</h1>
+                <h5 class="card-title">Eventos Registrados</h5>
+                <p class="card-text text-muted">Eventos planeados y en curso</p>
+                <a href="/eventos/" class="btn btn-outline-success">Ver Eventos</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tarjeta 2: Total de Tareas -->
+    <div class="col-md-4">
+        <div class="card h-100 border-primary shadow-sm">
+            <div class="card-body text-center">
+                <h1 class="display-4 text-primary">{{ total_tareas }}</h1>
+                <h5 class="card-title">Tareas Registradas</h5>
+                <p class="card-text text-muted">
+                    <span class="text-success">{{ tareas_completadas }}</span> completadas
+                </p>
+                <a href="/api/tareas/" class="btn btn-outline-primary">Ver Tareas API</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tarjeta 3: Progreso Global -->
+    <div class="col-md-4">
+        <div class="card h-100 border-info shadow-sm">
+            <div class="card-body text-center">
+                <h1 class="display-4 text-info">{{ porcentaje_global }}%</h1>
+                <h5 class="card-title">Progreso Global</h5>
+                <p class="card-text text-muted">Avance total de todos los eventos</p>
+                <div class="progress" style="height: 20px;">
+                    <div class="progress-bar bg-info" role="progressbar" 
+                         style="width: {{ porcentaje_global }}%;" 
+                         aria-valuenow="{{ porcentaje_global }}" 
+                         aria-valuemin="0" 
+                         aria-valuemax="100">
+                        {{ porcentaje_global }}%
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
