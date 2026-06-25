@@ -1,0 +1,86 @@
+<!-- templates/form_tarea.html -->
+{% extends 'base.html' %}
+
+{% block contenido %}
+<div class="row justify-content-center">
+    <div class="col-md-7">
+        <div class="card shadow-sm border-0">
+            <div class="card-header {% if accion == 'Crear' %}bg-success text-white{% else %}bg-warning text-dark{% endif %}">
+                <h4 class="mb-0">
+                    {% if accion == 'Crear' %}
+                        <i class="fas fa-plus-circle me-2"></i>{{ titulo }}
+                    {% else %}
+                        <i class="fas fa-edit me-2"></i>{{ titulo }}
+                    {% endif %}
+                </h4>
+            </div>
+            <div class="card-body">
+                <!-- Mensajes de éxito/error -->
+                {% if exito %}
+                    <div class="alert alert-success alert-dismissible fade show">
+                        <i class="fas fa-check-circle me-2"></i>{{ exito }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                {% endif %}
+                
+                {% if error %}
+                    <div class="alert alert-danger alert-dismissible fade show">
+                        <i class="fas fa-exclamation-circle me-2"></i>{{ error }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                {% endif %}
+
+                <form method="POST">
+                    <!-- Título -->
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Título de la Tarea *</label>
+                        <input type="text" name="titulo" class="form-control" 
+                               value="{{ tarea.titulo or '' }}" required>
+                    </div>
+
+                    <!-- Descripción -->
+                    <div class="mb-3">
+                        <label class="form-label">Descripción</label>
+                        <textarea name="descripcion" rows="2" class="form-control">{{ tarea.descripcion or '' }}</textarea>
+                    </div>
+
+                    <!-- Encargado -->
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Encargado *</label>
+                        <input type="text" name="encargado" class="form-control" 
+                               value="{{ tarea.encargado or '' }}" placeholder="Nombre del responsable" required>
+                    </div>
+
+                    <!-- Fecha Límite -->
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Fecha Límite *</label>
+                        <input type="date" name="fecha_limite" class="form-control" 
+                               value="{{ tarea.fecha_limite or '' }}" required>
+                        <small class="text-muted">El evento finaliza el {{ evento.fecha_fin }}</small>
+                    </div>
+
+                    <!-- Completada (solo para edición) -->
+                    {% if accion == 'Editar' %}
+                    <div class="mb-3 form-check">
+                        <input type="checkbox" name="completada" class="form-check-input" 
+                               id="completada" {% if tarea.completada %}checked{% endif %}>
+                        <label class="form-check-label" for="completada">
+                            <i class="fas fa-check-circle text-success"></i> Tarea completada
+                        </label>
+                    </div>
+                    {% endif %}
+
+                    <hr>
+                    <div class="d-flex justify-content-end gap-2">
+                        <a href="/eventos/{{ evento.id }}/" class="btn btn-secondary">Cancelar</a>
+                        <button type="submit" class="btn btn-success">
+                            <i class="fas fa-save me-1"></i>
+                            {% if accion == 'Crear' %}Guardar Tarea{% else %}Actualizar Tarea{% endif %}
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
