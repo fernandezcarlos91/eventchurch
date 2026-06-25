@@ -1,0 +1,59 @@
+<!-- templates/detalle_tarea.html -->
+{% extends 'base.html' %}
+
+{% block contenido %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card-modern">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h4 class="mb-0 fw-semibold">
+                    {% if tarea.completada %}
+                        <i class="fas fa-check-circle me-2 text-success"></i>
+                    {% else %}
+                        <i class="fas fa-clock me-2 text-warning"></i>
+                    {% endif %}
+                    {{ tarea.titulo }}
+                </h4>
+                <span class="badge badge-status 
+                    {% if tarea.completada %}bg-success text-white{% else %}bg-warning text-dark{% endif %}">
+                    {% if tarea.completada %}Completada{% else %}Pendiente{% endif %}
+                </span>
+            </div>
+            <div class="card-body">
+                <dl class="row mb-0">
+                    <dt class="col-sm-3 text-secondary-modern">Descripción</dt>
+                    <dd class="col-sm-9">{{ tarea.descripcion or 'Sin descripción' }}</dd>
+
+                    <dt class="col-sm-3 text-secondary-modern">Evento</dt>
+                    <dd class="col-sm-9">
+                        <a href="/eventos/{{ evento.id }}/" class="link-modern">{{ evento.nombre }}</a>
+                    </dd>
+
+                    <dt class="col-sm-3 text-secondary-modern">Encargado</dt>
+                    <dd class="col-sm-9"><strong>{{ tarea.encargado }}</strong></dd>
+
+                    <dt class="col-sm-3 text-secondary-modern">Fecha Límite</dt>
+                    <dd class="col-sm-9">{{ tarea.fecha_limite }}</dd>
+                </dl>
+
+                <hr style="border-color: var(--border);">
+
+                <div class="d-flex gap-2 flex-wrap">
+                    <a href="/eventos/{{ evento.id }}/" class="btn btn-modern btn-outline-modern">
+                        <i class="fas fa-arrow-left me-1"></i>Volver al Evento
+                    </a>
+                    <a href="/tareas/{{ tarea.id }}/editar/" class="btn btn-modern btn-outline-modern">
+                        <i class="fas fa-edit me-1"></i>Editar
+                    </a>
+                    <a href="/tareas/{{ tarea.id }}/eliminar/" class="btn btn-modern btn-outline-modern text-danger" style="border-color: #FEE2E2;">
+                        <i class="fas fa-trash me-1"></i>Eliminar
+                    </a>
+                    <a href="/api/tareas/{{ tarea.id }}/" class="btn btn-modern btn-outline-modern ms-auto">
+                        <i class="fas fa-code me-1"></i>Ver JSON
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

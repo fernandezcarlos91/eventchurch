@@ -4,67 +4,61 @@
 {% block contenido %}
 <div class="row justify-content-center">
     <div class="col-md-6">
-        <div class="card border-danger shadow-sm">
-            <div class="card-header bg-danger text-white">
-                <h4 class="mb-0">
+        <div class="card-modern" style="border-color: #FEE2E2;">
+            <div class="card-header" style="background: #FEF2F2; border-bottom-color: #FEE2E2;">
+                <h4 class="mb-0 fw-semibold" style="color: var(--danger);">
                     <i class="fas fa-exclamation-triangle me-2"></i>{{ titulo }}
                 </h4>
             </div>
             <div class="card-body">
                 {% if eliminado %}
-                    <!-- Mensaje de éxito después de eliminar -->
                     <div class="text-center py-4">
                         <i class="fas fa-check-circle text-success" style="font-size: 4rem;"></i>
-                        <h4 class="mt-3">{{ mensaje }}</h4>
-                        <a href="/eventos/" class="btn btn-success mt-3">
+                        <h4 class="mt-3" style="color: var(--text-primary);">{{ mensaje }}</h4>
+                        <a href="/eventos/" class="btn btn-modern btn-primary-modern mt-3">
                             <i class="fas fa-arrow-left me-1"></i>Volver a Eventos
                         </a>
                     </div>
                 {% else %}
-                    <!-- Mensaje de confirmación -->
                     {% if tipo == 'evento' %}
-                        <p class="fs-5">¿Estás seguro de que deseas eliminar el evento?</p>
-                        <p class="fw-bold fs-4 text-danger">"{{ evento.nombre }}"</p>
+                        <p class="fs-5" style="color: var(--text-primary);">¿Estás seguro de que deseas eliminar el evento?</p>
+                        <p class="fw-bold fs-4" style="color: var(--danger);">"{{ evento.nombre }}"</p>
                         
                         {% if tareas %}
-                            <div class="alert alert-warning">
+                            <div class="alert alert-modern alert-warning">
                                 <i class="fas fa-exclamation-circle me-2"></i>
                                 <strong>Advertencia:</strong> Este evento tiene 
                                 <strong>{{ tareas|length }} tarea(s)</strong> asociadas que también serán eliminadas.
                             </div>
-                            <ul class="text-muted">
+                            <ul class="text-secondary-modern small">
                             {% for tarea in tareas %}
                                 <li>{{ tarea.titulo }} ({{ tarea.encargado }})</li>
                             {% endfor %}
                             </ul>
                         {% else %}
-                            <p class="text-muted">Este evento no tiene tareas asociadas.</p>
+                            <p class="text-secondary-modern">Este evento no tiene tareas asociadas.</p>
                         {% endif %}
                         
                         <form method="POST">
                             <div class="d-flex gap-2 mt-3">
-                                <button type="submit" class="btn btn-danger">
+                                <button type="submit" class="btn btn-modern" style="background: var(--danger); color: #fff;">
                                     <i class="fas fa-trash me-1"></i>Sí, eliminar evento
                                 </button>
-                                <a href="/eventos/{{ evento.id }}/" class="btn btn-outline-secondary">
-                                    Cancelar
-                                </a>
+                                <a href="/eventos/{{ evento.id }}/" class="btn btn-modern btn-outline-modern">Cancelar</a>
                             </div>
                         </form>
                         
                     {% elif tipo == 'tarea' %}
-                        <p class="fs-5">¿Estás seguro de que deseas eliminar la tarea?</p>
-                        <p class="fw-bold fs-4 text-danger">"{{ tarea.titulo }}"</p>
-                        <p class="text-muted">Esta acción no se puede deshacer.</p>
+                        <p class="fs-5" style="color: var(--text-primary);">¿Estás seguro de que deseas eliminar la tarea?</p>
+                        <p class="fw-bold fs-4" style="color: var(--danger);">"{{ tarea.titulo }}"</p>
+                        <p class="text-secondary-modern">Esta acción no se puede deshacer.</p>
                         
                         <form method="POST">
                             <div class="d-flex gap-2 mt-3">
-                                <button type="submit" class="btn btn-danger">
+                                <button type="submit" class="btn btn-modern" style="background: var(--danger); color: #fff;">
                                     <i class="fas fa-trash me-1"></i>Sí, eliminar tarea
                                 </button>
-                                <a href="/eventos/{{ evento.id }}/" class="btn btn-outline-secondary">
-                                    Cancelar
-                                </a>
+                                <a href="/eventos/{{ evento.id }}/" class="btn btn-modern btn-outline-modern">Cancelar</a>
                             </div>
                         </form>
                     {% endif %}

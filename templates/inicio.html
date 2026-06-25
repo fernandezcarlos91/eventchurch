@@ -2,61 +2,150 @@
 {% extends 'base.html' %}
 
 {% block contenido %}
-<div class="row">
-    <div class="col-12 text-center mb-4">
-        <h1 class="display-4 fw-bold text-success">
-            <i class="fas fa-church me-2"></i>EventChurch
-        </h1>
-        <p class="lead text-muted">Gestor de Eventos para tu Iglesia</p>
-        <hr class="w-50 mx-auto">
+<div class="text-center mb-5">
+    <div class="mb-2">
+        <i class="fas fa-church" style="font-size: 4rem; color: var(--text-primary);"></i>
+    </div>
+    <h1 class="display-4 fw-bold" style="color: var(--text-primary); letter-spacing: -1px;">
+        EventChurch
+    </h1>
+    <p class="text-secondary-modern">Gestor de Eventos para tu Iglesia</p>
+    <div class="d-flex justify-content-center gap-2 mt-3">
+        <span class="badge bg-soft-primary text-primary px-4 py-2 rounded-pill">
+            <i class="fas fa-calendar-alt me-2"></i>{{ total_eventos }} eventos
+        </span>
+        <span class="badge bg-soft-success text-success px-4 py-2 rounded-pill">
+            <i class="fas fa-tasks me-2"></i>{{ total_tareas }} tareas
+        </span>
     </div>
 </div>
 
 <div class="row g-4">
-    <!-- Tarjeta 1: Total de Eventos -->
+    <!-- Eventos -->
     <div class="col-md-4">
-        <div class="card h-100 border-success shadow-sm">
-            <div class="card-body text-center">
-                <h1 class="display-4 text-success">{{ total_eventos }}</h1>
-                <h5 class="card-title">Eventos Registrados</h5>
-                <p class="card-text text-muted">Eventos planeados y en curso</p>
-                <a href="/eventos/" class="btn btn-outline-success">Ver Eventos</a>
+        <div class="card-modern text-center h-100">
+            <div class="card-body py-4">
+                <div class="mb-3">
+                    <span class="badge bg-soft-primary rounded-circle p-3" style="font-size: 1.5rem;">
+                        <i class="fas fa-calendar-alt text-primary"></i>
+                    </span>
+                </div>
+                <h1 class="display-3 fw-bold" style="color: var(--text-primary);">{{ total_eventos }}</h1>
+                <h5 class="fw-semibold" style="color: var(--text-primary);">Eventos Registrados</h5>
+                <p class="text-secondary-modern small">Planeados y en curso</p>
+                <a href="/eventos/" class="btn btn-modern btn-primary-modern mt-2">Ver Eventos</a>
             </div>
         </div>
     </div>
 
-    <!-- Tarjeta 2: Total de Tareas -->
+    <!-- Tareas -->
     <div class="col-md-4">
-        <div class="card h-100 border-primary shadow-sm">
-            <div class="card-body text-center">
-                <h1 class="display-4 text-primary">{{ total_tareas }}</h1>
-                <h5 class="card-title">Tareas Registradas</h5>
-                <p class="card-text text-muted">
-                    <span class="text-success">{{ tareas_completadas }}</span> completadas
+        <div class="card-modern text-center h-100">
+            <div class="card-body py-4">
+                <div class="mb-3">
+                    <span class="badge bg-soft-success rounded-circle p-3" style="font-size: 1.5rem;">
+                        <i class="fas fa-tasks text-success"></i>
+                    </span>
+                </div>
+                <h1 class="display-3 fw-bold" style="color: var(--text-primary);">{{ total_tareas }}</h1>
+                <h5 class="fw-semibold" style="color: var(--text-primary);">Tareas Registradas</h5>
+                <p class="text-secondary-modern small">
+                    <span class="text-success">{{ tareas_completadas }}</span> completadas · 
+                    <span class="text-warning">{{ total_tareas - tareas_completadas }}</span> pendientes
                 </p>
-                <a href="/api/tareas/" class="btn btn-outline-primary">Ver Tareas API</a>
+                <a href="/tareas/" class="btn btn-modern btn-success-modern mt-2">Ver Tareas</a>
             </div>
         </div>
     </div>
 
-    <!-- Tarjeta 3: Progreso Global -->
+    <!-- Progreso -->
     <div class="col-md-4">
-        <div class="card h-100 border-info shadow-sm">
-            <div class="card-body text-center">
-                <h1 class="display-4 text-info">{{ porcentaje_global }}%</h1>
-                <h5 class="card-title">Progreso Global</h5>
-                <p class="card-text text-muted">Avance total de todos los eventos</p>
-                <div class="progress" style="height: 20px;">
-                    <div class="progress-bar bg-info" role="progressbar" 
-                         style="width: {{ porcentaje_global }}%;" 
-                         aria-valuenow="{{ porcentaje_global }}" 
-                         aria-valuemin="0" 
-                         aria-valuemax="100">
-                        {{ porcentaje_global }}%
+        <div class="card-modern text-center h-100">
+            <div class="card-body py-4">
+                <div class="mb-2">
+                    <span class="badge bg-soft-warning rounded-circle p-3" style="font-size: 1.5rem;">
+                        <i class="fas fa-chart-pie text-warning"></i>
+                    </span>
+                </div>
+                <div class="circular-progress mx-auto" style="width: 120px; height: 120px; position: relative;">
+                    <canvas id="progressChart" width="120" height="120"></canvas>
+                    <!-- ✅ CORREGIDO: |int para forzar entero sin decimales -->
+                    <div class="percentage-text" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 1.5rem; font-weight: 700; color: var(--text-primary);">
+                        {{ porcentaje_global|int }}%
                     </div>
                 </div>
+                <h5 class="fw-semibold mt-2" style="color: var(--text-primary);">Progreso Global</h5>
+                <p class="text-secondary-modern small">Basado en {{ total_tareas }} tareas totales</p>
             </div>
         </div>
     </div>
 </div>
+
+<!-- Eventos Recientes -->
+<div class="card-modern mt-5">
+    <div class="card-header">
+        <h5 class="mb-0 fw-semibold">
+            <i class="far fa-clock me-2" style="color: var(--accent);"></i>Eventos Recientes
+        </h5>
+    </div>
+    <div class="card-body p-0">
+        {% if eventos %}
+        <div class="list-group list-group-flush">
+            {% for evento in eventos %}
+            <a href="/eventos/{{ evento.id }}/" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center px-4 py-3" style="border-color: var(--border);">
+                <div>
+                    <strong>{{ evento.nombre }}</strong>
+                    <br><small class="text-secondary-modern"><i class="far fa-calendar-alt me-1"></i>{{ evento.fecha_inicio }} → {{ evento.fecha_fin }}</small>
+                </div>
+                <span class="badge badge-status 
+                    {% if evento.estado == 'PLANEADO' %}bg-secondary text-white
+                    {% elif evento.estado == 'EN_PREPARACION' %}bg-warning text-dark
+                    {% elif evento.estado == 'EN_CURSO' %}bg-primary text-white
+                    {% elif evento.estado == 'FINALIZADO' %}bg-success text-white
+                    {% else %}bg-danger text-white{% endif %}">
+                    {{ evento.estado }}
+                </span>
+            </a>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="text-center py-4">
+            <p class="text-secondary-modern mb-0">No hay eventos registrados.</p>
+        </div>
+        {% endif %}
+        <div class="text-center py-3 border-top" style="border-color: var(--border);">
+            <a href="/eventos/" class="btn btn-modern btn-outline-modern">Ver todos los eventos</a>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const ctx = document.getElementById('progressChart').getContext('2d');
+    const porcentaje = {{ porcentaje_global }};
+    const restante = 100 - porcentaje;
+    
+    new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+            datasets: [{
+                data: [porcentaje, restante],
+                backgroundColor: [
+                    '#3B82F6',
+                    '#E5E7EB'
+                ],
+                borderWidth: 0,
+                cutout: '78%'
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false }
+            }
+        }
+    });
+});
+</script>
 {% endblock %}

@@ -1,21 +1,22 @@
-# app.py - EventChurch - Hito 3 (Completo)
+# app.py - EventChurch - Versión Definitiva
 
 from flask import Flask, render_template, jsonify, request, abort
 import mysql.connector
 from mysql.connector import Error
+import os
 
 app = Flask(__name__)
 
 # ==============================================================
-# CONFIGURACIÓN DE BASE DE DATOS (phpMyAdmin)
+# CONFIGURACIÓN DE BASE DE DATOS
 # ==============================================================
 
 DB_CONFIG = {
-    'host': '127.0.0.1',
+    'host': os.environ.get('DB_HOST', '127.0.0.1'),
     'port': 3306,
-    'user': 'root',
-    'password': '',
-    'database': 'eventchurch',
+    'user': os.environ.get('DB_USER', 'root'),
+    'password': os.environ.get('DB_PASSWORD', ''),
+    'database': os.environ.get('DB_NAME', 'eventchurch'),
     'charset': 'utf8mb4'
 }
 
@@ -127,6 +128,67 @@ def lista_eventos():
     return render_template('lista_eventos.html',
         titulo='Eventos',
         eventos=eventos_con_progreso
+    )
+
+# ==============================================================
+# RUTAS HTML - Detalle de evento (CRUD - Read)
+# ==============================================================
+
+@app.route('/eventos/<int:id>/')
+def detalle_evento(id):
+    """Detalle completo de un evento con sus tareas"""
+    evento = query("SELECT * FROM eventos WHERE id = %s", (id,), one=True)
+    if evento is None:
+        abort(404)
+    
+    tareas = query("SELECT * FROM tareas WHERE evento_id = %s", (id,))
+    porcentaje = calcular_progreso(id)
+    
+    evento_con_progreso = dict(evento)
+    evento_con_progreso['porcentaje_avance'] = porcentaje
+    
+    return render_template('detalle_evento.html',
+        titulo=f'Detalle: {evento["nombre"]}',
+        evento=evento_con_progreso,
+        tareas=tareas
+    )
+
+# ==============================================================
+# RUTAS HTML - Lista de todas las tareas
+# ==============================================================
+
+@app.route('/tareas/')
+def lista_tareas():
+    """Lista todas las tareas con información del evento asociado"""
+    tareas = query("""
+        SELECT t.*, e.nombre as evento_nombre 
+        FROM tareas t 
+        LEFT JOIN eventos e ON t.evento_id = e.id 
+        ORDER BY t.completada ASC, t.fecha_limite ASC
+    """)
+    
+    return render_template('lista_tareas.html',
+        titulo='Tareas',
+        tareas=tareas
+    )
+
+# ==============================================================
+# RUTAS HTML - Detalle de tarea (CRUD - Read)
+# ==============================================================
+
+@app.route('/tareas/<int:id>/')
+def detalle_tarea(id):
+    """Detalle completo de una tarea"""
+    tarea = query("SELECT * FROM tareas WHERE id = %s", (id,), one=True)
+    if tarea is None:
+        abort(404)
+    
+    evento = query("SELECT * FROM eventos WHERE id = %s", (tarea['evento_id'],), one=True)
+    
+    return render_template('detalle_tarea.html',
+        titulo=f'Detalle: {tarea["titulo"]}',
+        tarea=tarea,
+        evento=evento
     )
 
 # ==============================================================
@@ -273,7 +335,7 @@ def eliminar_evento(id):
     )
 
 # ==============================================================
-# RUTAS HTML - Filtrar eventos por tipo
+# RUTAS HTML - Filtrar eventos
 # ==============================================================
 
 @app.route('/eventos/filtro/')
@@ -299,33 +361,7 @@ def filtrar_eventos():
     
     return render_template('lista_eventos.html',
         titulo='Eventos Filtrados',
-        eventos=eventos_con_progreso,
-        filtro_activo=True,
-        tipo_filtro=tipo,
-        estado_filtro=estado
-    )
-
-# ==============================================================
-# RUTAS HTML - Detalle del evento
-# ==============================================================
-
-@app.route('/eventos/<int:id>/')
-def detalle_evento(id):
-    """Detalle completo de un evento con sus tareas"""
-    evento = query("SELECT * FROM eventos WHERE id = %s", (id,), one=True)
-    if evento is None:
-        abort(404)
-    
-    tareas = query("SELECT * FROM tareas WHERE evento_id = %s", (id,))
-    porcentaje = calcular_progreso(id)
-    
-    evento_con_progreso = dict(evento)
-    evento_con_progreso['porcentaje_avance'] = porcentaje
-    
-    return render_template('detalle_evento.html',
-        titulo=f'Detalle: {evento["nombre"]}',
-        evento=evento_con_progreso,
-        tareas=tareas
+        eventos=eventos_con_progreso
     )
 
 # ==============================================================
@@ -537,7 +573,7 @@ def api_detalle_evento(id):
     return jsonify(resultado)
 
 # ==============================================================
-# RUTAS API - POST /api/eventos/ (Crear evento)
+# RUTAS API - POST /api/eventos/
 # ==============================================================
 
 @app.route('/api/eventos/', methods=['POST'])
@@ -555,7 +591,6 @@ def api_crear_evento():
     fecha_inicio = datos.get('fecha_inicio')
     fecha_fin = datos.get('fecha_fin')
     
-    # Validación: fechas coherentes
     if fecha_fin and fecha_inicio and fecha_fin < fecha_inicio:
         return jsonify({'error': 'La fecha de fin no puede ser anterior a la fecha de inicio'}), 400
     
@@ -584,7 +619,7 @@ def api_crear_evento():
     }), 201
 
 # ==============================================================
-# RUTAS API - PUT /api/eventos/<id>/ (Actualizar evento)
+# RUTAS API - PUT /api/eventos/<id>/
 # ==============================================================
 
 @app.route('/api/eventos/<int:id>/', methods=['PUT'])
@@ -634,7 +669,7 @@ def api_actualizar_evento(id):
     })
 
 # ==============================================================
-# RUTAS API - DELETE /api/eventos/<id>/ (Eliminar evento)
+# RUTAS API - DELETE /api/eventos/<id>/
 # ==============================================================
 
 @app.route('/api/eventos/<int:id>/', methods=['DELETE'])
@@ -664,7 +699,24 @@ def api_lista_tareas():
     })
 
 # ==============================================================
-# RUTAS API - POST /api/tareas/ (Crear tarea)
+# RUTAS API - GET /api/tareas/<id>/
+# ==============================================================
+
+@app.route('/api/tareas/<int:id>/')
+def api_detalle_tarea(id):
+    """API: Obtener una tarea específica"""
+    tarea = query("SELECT * FROM tareas WHERE id = %s", (id,), one=True)
+    if tarea is None:
+        return jsonify({'error': 'Tarea no encontrada', 'id': id}), 404
+    
+    evento = query("SELECT * FROM eventos WHERE id = %s", (tarea['evento_id'],), one=True)
+    resultado = dict(tarea)
+    resultado['evento_nombre'] = evento['nombre'] if evento else None
+    
+    return jsonify(resultado)
+
+# ==============================================================
+# RUTAS API - POST /api/tareas/
 # ==============================================================
 
 @app.route('/api/tareas/', methods=['POST'])
@@ -706,7 +758,7 @@ def api_crear_tarea():
     }), 201
 
 # ==============================================================
-# RUTAS API - PUT /api/tareas/<id>/ (Actualizar tarea)
+# RUTAS API - PUT /api/tareas/<id>/
 # ==============================================================
 
 @app.route('/api/tareas/<int:id>/', methods=['PUT'])
@@ -748,7 +800,7 @@ def api_actualizar_tarea(id):
     })
 
 # ==============================================================
-# RUTAS API - DELETE /api/tareas/<id>/ (Eliminar tarea)
+# RUTAS API - DELETE /api/tareas/<id>/
 # ==============================================================
 
 @app.route('/api/tareas/<int:id>/', methods=['DELETE'])
@@ -765,7 +817,7 @@ def api_eliminar_tarea(id):
     })
 
 # ==============================================================
-# RUTAS API - GET /api/resumen/ (Estadísticas)
+# RUTAS API - GET /api/resumen/
 # ==============================================================
 
 @app.route('/api/resumen/')
@@ -776,12 +828,10 @@ def api_resumen():
     
     tareas_completadas = sum(1 for t in tareas if t['completada'])
     
-    # Eventos por tipo
     eventos_por_tipo = {}
     for e in eventos:
         eventos_por_tipo[e['tipo_evento']] = eventos_por_tipo.get(e['tipo_evento'], 0) + 1
     
-    # Eventos por estado
     eventos_por_estado = {}
     for e in eventos:
         eventos_por_estado[e['estado']] = eventos_por_estado.get(e['estado'], 0) + 1
@@ -796,7 +846,7 @@ def api_resumen():
     })
 
 # ==============================================================
-# RUTAS API - GET /api/eventos/filtro/ (Filtros)
+# RUTAS API - GET /api/eventos/filtro/
 # ==============================================================
 
 @app.route('/api/eventos/filtro/')

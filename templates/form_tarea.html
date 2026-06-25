@@ -4,76 +4,70 @@
 {% block contenido %}
 <div class="row justify-content-center">
     <div class="col-md-7">
-        <div class="card shadow-sm border-0">
-            <div class="card-header {% if accion == 'Crear' %}bg-success text-white{% else %}bg-warning text-dark{% endif %}">
-                <h4 class="mb-0">
+        <div class="card-modern">
+            <div class="card-header">
+                <h4 class="mb-0 fw-semibold">
                     {% if accion == 'Crear' %}
-                        <i class="fas fa-plus-circle me-2"></i>{{ titulo }}
+                        <i class="fas fa-plus me-2" style="color: var(--accent);"></i>{{ titulo }}
                     {% else %}
-                        <i class="fas fa-edit me-2"></i>{{ titulo }}
+                        <i class="fas fa-edit me-2" style="color: var(--warning);"></i>{{ titulo }}
                     {% endif %}
                 </h4>
             </div>
             <div class="card-body">
-                <!-- Mensajes de éxito/error -->
                 {% if exito %}
-                    <div class="alert alert-success alert-dismissible fade show">
+                    <div class="alert alert-modern alert-success">
                         <i class="fas fa-check-circle me-2"></i>{{ exito }}
-                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                     </div>
                 {% endif %}
                 
                 {% if error %}
-                    <div class="alert alert-danger alert-dismissible fade show">
+                    <div class="alert alert-modern alert-danger">
                         <i class="fas fa-exclamation-circle me-2"></i>{{ error }}
-                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                     </div>
                 {% endif %}
 
                 <form method="POST">
-                    <!-- Título -->
                     <div class="mb-3">
-                        <label class="form-label fw-bold">Título de la Tarea *</label>
+                        <label class="form-label fw-semibold">Título de la Tarea <span class="text-danger">*</span></label>
                         <input type="text" name="titulo" class="form-control" 
-                               value="{{ tarea.titulo or '' }}" required>
+                               value="{{ tarea.titulo or '' }}" placeholder="Ej: Preparar lista de invitados" required>
                     </div>
 
-                    <!-- Descripción -->
                     <div class="mb-3">
                         <label class="form-label">Descripción</label>
-                        <textarea name="descripcion" rows="2" class="form-control">{{ tarea.descripcion or '' }}</textarea>
+                        <textarea name="descripcion" rows="2" class="form-control" placeholder="Detalles de la tarea...">{{ tarea.descripcion or '' }}</textarea>
                     </div>
 
-                    <!-- Encargado -->
                     <div class="mb-3">
-                        <label class="form-label fw-bold">Encargado *</label>
+                        <label class="form-label fw-semibold">Encargado <span class="text-danger">*</span></label>
                         <input type="text" name="encargado" class="form-control" 
                                value="{{ tarea.encargado or '' }}" placeholder="Nombre del responsable" required>
                     </div>
 
-                    <!-- Fecha Límite -->
                     <div class="mb-3">
-                        <label class="form-label fw-bold">Fecha Límite *</label>
+                        <label class="form-label fw-semibold">Fecha Límite <span class="text-danger">*</span></label>
                         <input type="date" name="fecha_limite" class="form-control" 
                                value="{{ tarea.fecha_limite or '' }}" required>
-                        <small class="text-muted">El evento finaliza el {{ evento.fecha_fin }}</small>
+                        <small class="text-secondary-modern">El evento finaliza el <strong>{{ evento.fecha_fin }}</strong></small>
                     </div>
 
-                    <!-- Completada (solo para edición) -->
                     {% if accion == 'Editar' %}
                     <div class="mb-3 form-check">
                         <input type="checkbox" name="completada" class="form-check-input" 
-                               id="completada" {% if tarea.completada %}checked{% endif %}>
-                        <label class="form-check-label" for="completada">
-                            <i class="fas fa-check-circle text-success"></i> Tarea completada
+                               id="completada" style="width: 18px; height: 18px;" {% if tarea.completada %}checked{% endif %}>
+                        <label class="form-check-label fw-semibold" for="completada">
+                            <i class="fas fa-check-circle text-success me-1"></i>Tarea completada
                         </label>
                     </div>
                     {% endif %}
 
-                    <hr>
-                    <div class="d-flex justify-content-end gap-2">
-                        <a href="/eventos/{{ evento.id }}/" class="btn btn-secondary">Cancelar</a>
-                        <button type="submit" class="btn btn-success">
+                    <hr style="border-color: var(--border);">
+                    <div class="d-flex gap-2 flex-wrap">
+                        <a href="/eventos/{{ evento.id }}/" class="btn btn-modern btn-outline-modern">
+                            <i class="fas fa-arrow-left me-1"></i>Volver al Evento
+                        </a>
+                        <button type="submit" class="btn btn-modern btn-primary-modern ms-auto">
                             <i class="fas fa-save me-1"></i>
                             {% if accion == 'Crear' %}Guardar Tarea{% else %}Actualizar Tarea{% endif %}
                         </button>

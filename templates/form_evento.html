@@ -4,71 +4,63 @@
 {% block contenido %}
 <div class="row justify-content-center">
     <div class="col-md-8">
-        <div class="card shadow-sm border-0">
-            <div class="card-header {% if accion == 'Crear' %}bg-success text-white{% else %}bg-warning text-dark{% endif %}">
-                <h4 class="mb-0">
+        <div class="card-modern">
+            <div class="card-header">
+                <h4 class="mb-0 fw-semibold">
                     {% if accion == 'Crear' %}
-                        <i class="fas fa-plus-circle me-2"></i>{{ titulo }}
+                        <i class="fas fa-plus me-2" style="color: var(--accent);"></i>{{ titulo }}
                     {% else %}
-                        <i class="fas fa-edit me-2"></i>{{ titulo }}
+                        <i class="fas fa-edit me-2" style="color: var(--warning);"></i>{{ titulo }}
                     {% endif %}
                 </h4>
             </div>
             <div class="card-body">
-                <!-- Mensajes de éxito/error -->
                 {% if exito %}
-                    <div class="alert alert-success alert-dismissible fade show">
+                    <div class="alert alert-modern alert-success">
                         <i class="fas fa-check-circle me-2"></i>{{ exito }}
-                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                     </div>
                 {% endif %}
                 
                 {% if error %}
-                    <div class="alert alert-danger alert-dismissible fade show">
+                    <div class="alert alert-modern alert-danger">
                         <i class="fas fa-exclamation-circle me-2"></i>{{ error }}
-                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                     </div>
                 {% endif %}
 
                 <form method="POST">
-                    <!-- Nombre -->
                     <div class="mb-3">
-                        <label class="form-label fw-bold">Nombre del Evento *</label>
+                        <label class="form-label fw-semibold">Nombre del Evento <span class="text-danger">*</span></label>
                         <input type="text" name="nombre" class="form-control" 
                                value="{{ evento.nombre or '' }}" required>
                     </div>
 
-                    <!-- Descripción -->
                     <div class="mb-3">
                         <label class="form-label">Descripción</label>
                         <textarea name="descripcion" rows="3" class="form-control">{{ evento.descripcion or '' }}</textarea>
                     </div>
 
-                    <!-- Fechas -->
                     <div class="row">
                         <div class="col-md-6 mb-3">
-                            <label class="form-label fw-bold">Fecha Inicio *</label>
+                            <label class="form-label fw-semibold">Fecha Inicio <span class="text-danger">*</span></label>
                             <input type="date" name="fecha_inicio" class="form-control" 
                                    value="{{ evento.fecha_inicio or '' }}" required>
                         </div>
                         <div class="col-md-6 mb-3">
-                            <label class="form-label fw-bold">Fecha Fin *</label>
+                            <label class="form-label fw-semibold">Fecha Fin <span class="text-danger">*</span></label>
                             <input type="date" name="fecha_fin" class="form-control" 
                                    value="{{ evento.fecha_fin or '' }}" required>
                         </div>
                     </div>
 
-                    <!-- Ubicación -->
                     <div class="mb-3">
                         <label class="form-label">Ubicación</label>
                         <input type="text" name="ubicacion" class="form-control" 
                                value="{{ evento.ubicacion or '' }}">
                     </div>
 
-                    <!-- Tipo de Evento -->
                     <div class="row">
                         <div class="col-md-6 mb-3">
-                            <label class="form-label fw-bold">Tipo de Evento *</label>
+                            <label class="form-label fw-semibold">Tipo de Evento <span class="text-danger">*</span></label>
                             <select name="tipo_evento" class="form-select" required>
                                 <option value="">Seleccionar...</option>
                                 <option value="MISIONES" {% if evento.tipo_evento == 'MISIONES' %}selected{% endif %}>Misiones</option>
@@ -81,7 +73,7 @@
                             </select>
                         </div>
                         <div class="col-md-6 mb-3">
-                            <label class="form-label fw-bold">Estado</label>
+                            <label class="form-label fw-semibold">Estado</label>
                             <select name="estado" class="form-select">
                                 <option value="PLANEADO" {% if evento.estado == 'PLANEADO' %}selected{% endif %}>Planeado</option>
                                 <option value="EN_PREPARACION" {% if evento.estado == 'EN_PREPARACION' %}selected{% endif %}>En Preparación</option>
@@ -92,10 +84,10 @@
                         </div>
                     </div>
 
-                    <hr>
+                    <hr style="border-color: var(--border);">
                     <div class="d-flex justify-content-end gap-2">
-                        <a href="/eventos/" class="btn btn-secondary">Cancelar</a>
-                        <button type="submit" class="btn btn-success">
+                        <a href="/eventos/" class="btn btn-modern btn-outline-modern">Cancelar</a>
+                        <button type="submit" class="btn btn-modern btn-primary-modern">
                             <i class="fas fa-save me-1"></i>
                             {% if accion == 'Crear' %}Guardar Evento{% else %}Actualizar Evento{% endif %}
                         </button>

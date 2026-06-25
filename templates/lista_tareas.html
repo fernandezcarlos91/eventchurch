@@ -1,0 +1,76 @@
+<!-- templates/lista_tareas.html -->
+{% extends 'base.html' %}
+
+{% block contenido %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="page-title"><i class="fas fa-tasks"></i>{{ titulo }}</h2>
+    <span class="badge bg-soft-primary text-primary px-4 py-2 rounded-pill">
+        {{ tareas|length }} tareas totales
+    </span>
+</div>
+
+{% if tareas %}
+<div class="table-modern">
+    <table class="table table-modern">
+        <thead>
+            <tr>
+                <th>Título</th>
+                <th>Evento</th>
+                <th>Encargado</th>
+                <th>Fecha Límite</th>
+                <th>Estado</th>
+                <th class="text-center">Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for tarea in tareas %}
+            <tr>
+                <td>
+                    <strong>{{ tarea.titulo }}</strong>
+                    <br><small class="text-secondary-modern">{{ tarea.descripcion or '' }}</small>
+                </td>
+                <td>
+                    <a href="/eventos/{{ tarea.evento_id }}/" class="link-modern">
+                        {{ tarea.evento_nombre or 'Evento eliminado' }}
+                    </a>
+                </td>
+                <td>{{ tarea.encargado }}</td>
+                <td>{{ tarea.fecha_limite }}</td>
+                <td>
+                    {% if tarea.completada %}
+                        <span class="badge badge-status bg-success text-white">
+                            <i class="fas fa-check-circle me-1"></i>Completada
+                        </span>
+                    {% else %}
+                        <span class="badge badge-status bg-warning text-dark">
+                            <i class="fas fa-clock me-1"></i>Pendiente
+                        </span>
+                    {% endif %}
+                </td>
+                <td class="text-center">
+                    <a href="/tareas/{{ tarea.id }}/" class="btn btn-sm btn-outline-modern rounded-pill px-3" title="Ver detalle">
+                        <i class="fas fa-eye"></i>
+                    </a>
+                    <a href="/tareas/{{ tarea.id }}/editar/" class="btn btn-sm btn-outline-modern rounded-pill px-3" title="Editar">
+                        <i class="fas fa-edit"></i>
+                    </a>
+                    <a href="/tareas/{{ tarea.id }}/eliminar/" class="btn btn-sm btn-outline-modern rounded-pill px-3 text-danger" title="Eliminar" style="border-color: #FEE2E2;">
+                        <i class="fas fa-trash"></i>
+                    </a>
+                </td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% else %}
+<div class="card-modern text-center py-5">
+    <div class="card-body">
+        <i class="fas fa-tasks text-secondary-modern" style="font-size: 3rem;"></i>
+        <h5 class="mt-3" style="color: var(--text-primary);">No hay tareas registradas</h5>
+        <p class="text-secondary-modern">Crea un evento y agrega tareas desde su detalle.</p>
+        <a href="/eventos/" class="btn btn-modern btn-primary-modern">Ver Eventos</a>
+    </div>
+</div>
+{% endif %}
+{% endblock %}

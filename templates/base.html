@@ -7,33 +7,313 @@
     <title>EventChurch - {{ titulo }}</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        /* ========== VARIABLES ========== */
+        :root {
+            --primary: #1A2A4A;
+            --primary-light: #2A3A5A;
+            --accent: #3B82F6;
+            --accent-hover: #2563EB;
+            --success: #10B981;
+            --success-hover: #059669;
+            --warning: #F59E0B;
+            --danger: #EF4444;
+            --bg: #F5F6FA;
+            --card-bg: #FFFFFF;
+            --text-primary: #1F2937;
+            --text-secondary: #6B7280;
+            --text-muted: #9CA3AF;
+            --border: #E5E7EB;
+            --shadow: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+            --shadow-hover: 0 10px 25px rgba(0,0,0,0.08);
+            --radius: 12px;
+            --radius-sm: 8px;
+            --transition: all 0.2s ease;
+        }
+        
+        * {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+        }
+        
+        body {
+            background: var(--bg);
+            color: var(--text-primary);
+            -webkit-font-smoothing: antialiased;
+        }
+        
+        /* ========== NAVBAR ========== */
+        .navbar-modern {
+            background: var(--primary) !important;
+            padding: 14px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.06);
+        }
+        
+        .navbar-modern .navbar-brand {
+            font-weight: 700;
+            font-size: 1.25rem;
+            letter-spacing: -0.3px;
+            color: #fff !important;
+        }
+        
+        .navbar-modern .navbar-brand i {
+            margin-right: 10px;
+            opacity: 0.8;
+        }
+        
+        .navbar-modern .nav-link {
+            color: rgba(255,255,255,0.75) !important;
+            font-weight: 500;
+            font-size: 0.9rem;
+            padding: 6px 16px !important;
+            border-radius: var(--radius-sm);
+            transition: var(--transition);
+        }
+        
+        .navbar-modern .nav-link:hover {
+            color: #fff !important;
+            background: rgba(255,255,255,0.08);
+        }
+        
+        .navbar-modern .nav-link i {
+            margin-right: 6px;
+            font-size: 0.85rem;
+            opacity: 0.7;
+        }
+        
+        /* ========== TARJETAS ========== */
+        .card-modern {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            transition: var(--transition);
+        }
+        
+        .card-modern:hover {
+            box-shadow: var(--shadow-hover);
+            transform: translateY(-2px);
+        }
+        
+        .card-modern .card-header {
+            background: transparent;
+            border-bottom: 1px solid var(--border);
+            padding: 18px 24px;
+            font-weight: 600;
+        }
+        
+        .card-modern .card-body {
+            padding: 24px;
+        }
+        
+        /* ========== TABLA ========== */
+        .table-modern {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            overflow: hidden;
+            box-shadow: var(--shadow);
+        }
+        
+        .table-modern thead {
+            background: #F8F9FC;
+        }
+        
+        .table-modern thead th {
+            padding: 14px 20px;
+            font-weight: 600;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--text-secondary);
+            border-bottom: 1px solid var(--border);
+        }
+        
+        .table-modern tbody td {
+            padding: 14px 20px;
+            vertical-align: middle;
+            border-bottom: 1px solid var(--border);
+            color: var(--text-primary);
+        }
+        
+        .table-modern tbody tr:last-child td {
+            border-bottom: none;
+        }
+        
+        .table-modern tbody tr:hover {
+            background: #FAFBFF;
+        }
+        
+        /* ========== BOTONES ========== */
+        .btn-modern {
+            font-weight: 500;
+            border-radius: var(--radius-sm);
+            padding: 8px 20px;
+            font-size: 0.9rem;
+            transition: var(--transition);
+            border: 1px solid transparent;
+        }
+        
+        .btn-modern:hover {
+            transform: translateY(-1px);
+        }
+        
+        .btn-primary-modern {
+            background: var(--accent);
+            color: #fff;
+        }
+        
+        .btn-primary-modern:hover {
+            background: var(--accent-hover);
+            color: #fff;
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+        }
+        
+        .btn-success-modern {
+            background: var(--success);
+            color: #fff;
+        }
+        
+        .btn-success-modern:hover {
+            background: var(--success-hover);
+            color: #fff;
+            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+        }
+        
+        .btn-outline-modern {
+            background: transparent;
+            color: var(--text-secondary);
+            border-color: var(--border);
+        }
+        
+        .btn-outline-modern:hover {
+            background: var(--bg);
+            color: var(--text-primary);
+            border-color: var(--text-secondary);
+        }
+        
+        .btn-outline-primary-modern {
+            background: transparent;
+            color: var(--accent);
+            border-color: var(--accent);
+        }
+        
+        .btn-outline-primary-modern:hover {
+            background: var(--accent);
+            color: #fff;
+        }
+        
+        /* ========== BADGES ========== */
+        .badge-modern {
+            font-weight: 500;
+            border-radius: 20px;
+            padding: 4px 14px;
+            font-size: 0.75rem;
+        }
+        
+        .badge-status {
+            padding: 5px 16px;
+            border-radius: 20px;
+            font-weight: 500;
+            font-size: 0.75rem;
+        }
+        
+        /* ========== LINKS ========== */
+        .link-modern {
+            color: var(--text-primary);
+            text-decoration: none;
+            font-weight: 500;
+            transition: var(--transition);
+        }
+        
+        .link-modern:hover {
+            color: var(--accent);
+        }
+        
+        /* ========== PROGRESS ========== */
+        .progress-modern {
+            height: 6px;
+            border-radius: 10px;
+            background: #E5E7EB;
+        }
+        
+        .progress-modern .progress-bar {
+            border-radius: 10px;
+        }
+        
+        /* ========== ALERTAS ========== */
+        .alert-modern {
+            border: none;
+            border-radius: var(--radius-sm);
+            padding: 14px 20px;
+        }
+        
+        /* ========== TÍTULOS ========== */
+        .page-title {
+            font-weight: 700;
+            font-size: 1.5rem;
+            color: var(--text-primary);
+            letter-spacing: -0.3px;
+        }
+        
+        .page-title i {
+            color: var(--accent);
+            margin-right: 10px;
+        }
+        
+        /* ========== MISC ========== */
+        .text-secondary-modern {
+            color: var(--text-secondary);
+        }
+        
+        .bg-soft-primary {
+            background: #EEF2FF;
+        }
+        
+        .bg-soft-success {
+            background: #ECFDF5;
+        }
+        
+        .bg-soft-warning {
+            background: #FFFBEB;
+        }
+        
+        .bg-soft-danger {
+            background: #FEF2F2;
+        }
+    </style>
 </head>
-<body class="bg-light">
+<body>
 
-    <!-- Barra de navegación -->
-    <nav class="navbar navbar-expand-lg navbar-dark bg-success mb-4 shadow">
+    <!-- ========== NAVBAR ========== -->
+    <nav class="navbar navbar-expand-lg navbar-modern">
         <div class="container">
-            <a class="navbar-brand fw-bold" href="/">
-                <i class="fas fa-church me-2"></i>EventChurch
+            <a class="navbar-brand" href="/">
+                <i class="fas fa-church"></i>EventChurch
             </a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+            <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
                 <span class="navbar-toggler-icon"></span>
             </button>
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav ms-auto">
                     <li class="nav-item">
-                        <a class="nav-link text-white" href="/">
-                            <i class="fas fa-home me-1"></i>Inicio
+                        <a class="nav-link" href="/">
+                            <i class="fas fa-home"></i>Inicio
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link text-white" href="/eventos/">
-                            <i class="fas fa-calendar me-1"></i>Eventos
+                        <a class="nav-link" href="/eventos/">
+                            <i class="fas fa-calendar-alt"></i>Eventos
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link text-white" href="/api/eventos/">
-                            <i class="fas fa-code me-1"></i>API JSON
+                        <a class="nav-link" href="/tareas/">
+                            <i class="fas fa-tasks"></i>Tareas
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/api/eventos/">
+                            <i class="fas fa-code"></i>API
                         </a>
                     </li>
                 </ul>
@@ -41,11 +321,12 @@
         </div>
     </nav>
 
-    <!-- Contenido principal -->
-    <div class="container pb-5">
+    <!-- ========== CONTENIDO ========== -->
+    <div class="container py-5">
         {% block contenido %}{% endblock %}
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </body>
 </html>
