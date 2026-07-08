@@ -1,45 +1,27 @@
-# app.py - EventChurch - Versión Definitiva
+# app.py - EventChurch para PythonAnywhere con SQLite
 
 from flask import Flask, render_template, jsonify, request, abort
-import mysql.connector
-from mysql.connector import Error
+import sqlite3
 import os
 
 app = Flask(__name__)
 
 # ==============================================================
-# CONFIGURACIÓN DE BASE DE DATOS
+# CONFIGURACIÓN DE BASE DE DATOS (SQLite)
 # ==============================================================
 
-DB_CONFIG = {
-    'host': os.environ.get('DB_HOST', '127.0.0.1'),
-    'port': 3306,
-    'user': os.environ.get('DB_USER', 'root'),
-    'password': os.environ.get('DB_PASSWORD', ''),
-    'database': os.environ.get('DB_NAME', 'eventchurch'),
-    'charset': 'utf8mb4'
-}
-
-# ==============================================================
-# FUNCIONES AUXILIARES - Conexión a MySQL
-# ==============================================================
+DB_PATH = os.path.join(os.path.dirname(__file__), 'eventchurch.db')
 
 def get_db_connection():
-    """Obtiene una conexión a la base de datos"""
-    try:
-        conn = mysql.connector.connect(**DB_CONFIG)
-        return conn
-    except Error as e:
-        print(f"Error de conexión: {e}")
-        return None
+    """Obtiene una conexión a la base de datos SQLite"""
+    conn = sqlite3.connect(DB_PATH)
+    conn.row_factory = sqlite3.Row
+    return conn
 
 def query(sql, params=(), one=False):
     """Ejecuta SELECT y retorna filas como diccionarios"""
     conn = get_db_connection()
-    if conn is None:
-        return None if one else []
-    
-    cursor = conn.cursor(dictionary=True)
+    cursor = conn.cursor()
     cursor.execute(sql, params)
     
     if one:
@@ -49,22 +31,98 @@ def query(sql, params=(), one=False):
     
     cursor.close()
     conn.close()
-    return result
+    
+    if result:
+        if one:
+            return dict(result)
+        else:
+            return [dict(row) for row in result]
+    return None if one else []
 
 def execute(sql, params=()):
     """Ejecuta INSERT, UPDATE o DELETE"""
     conn = get_db_connection()
-    if conn is None:
-        return None
-    
     cursor = conn.cursor()
     cursor.execute(sql, params)
     conn.commit()
-    
     lastrowid = cursor.lastrowid
     cursor.close()
     conn.close()
     return lastrowid
+
+# ==============================================================
+# FUNCIÓN PARA CREAR TABLAS AUTOMÁTICAMENTE
+# ==============================================================
+
+def crear_tablas():
+    """Crea las tablas si no existen"""
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    
+    # Crear tabla eventos
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS eventos (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            nombre TEXT NOT NULL,
+            descripcion TEXT,
+            fecha_inicio TEXT NOT NULL,
+            fecha_fin TEXT NOT NULL,
+            ubicacion TEXT,
+            estado TEXT DEFAULT 'PLANEADO',
+            tipo_evento TEXT NOT NULL
+        )
+    """)
+    
+    # Crear tabla tareas
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS tareas (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            titulo TEXT NOT NULL,
+            descripcion TEXT,
+            evento_id INTEGER NOT NULL,
+            encargado TEXT NOT NULL,
+            fecha_limite TEXT NOT NULL,
+            completada INTEGER DEFAULT 0,
+            FOREIGN KEY (evento_id) REFERENCES eventos(id) ON DELETE CASCADE
+        )
+    """)
+    
+    conn.commit()
+    
+    # Verificar si hay datos de prueba
+    cursor.execute("SELECT COUNT(*) as total FROM eventos")
+    count = cursor.fetchone()
+    
+    if count[0] == 0:
+        # Insertar datos de prueba
+        cursor.execute("""
+            INSERT INTO eventos (nombre, descripcion, fecha_inicio, fecha_fin, ubicacion, tipo_evento, estado)
+            VALUES 
+                ('Conferencia de Misiones 2026', 'Conferencia anual de misiones con invitados especiales', '2026-08-15', '2026-08-17', 'Templo Central', 'MISIONES', 'PLANEADO'),
+                ('Celebración 15° Aniversario', 'Celebración del 15 aniversario de la iglesia', '2026-05-20', '2026-05-20', 'Templo Central', 'ANIVERSARIO', 'EN_PREPARACION'),
+                ('Retiro de Familias', 'Retiro espiritual para familias', '2026-07-10', '2026-07-12', 'Centro de Retiros El Shaddai', 'FAMILIAS', 'PLANEADO')
+        """)
+        
+        evento_id = cursor.lastrowid - 2  # ID del primer evento
+        
+        cursor.execute("""
+            INSERT INTO tareas (titulo, descripcion, evento_id, encargado, fecha_limite, completada)
+            VALUES 
+                ('Preparar lista de invitados', 'Hacer lista de invitados especiales', 1, 'María Pérez', '2026-07-15', 0),
+                ('Coordinar música y alabanza', 'Organizar el grupo de alabanza', 1, 'Pedro González', '2026-08-01', 0),
+                ('Organizar logística de alimentos', 'Coordinar comida para los asistentes', 1, 'Juan López', '2026-08-10', 0)
+        """)
+        
+        conn.commit()
+        print("✅ Tablas creadas y datos de prueba insertados")
+    else:
+        print("✅ Tablas ya existen")
+    
+    cursor.close()
+    conn.close()
+
+# Crear tablas al iniciar
+crear_tablas()
 
 # ==============================================================
 # FUNCIONES AUXILIARES - Lógica de negocio
@@ -73,7 +131,7 @@ def execute(sql, params=()):
 def calcular_progreso(evento_id):
     """Calcula el porcentaje de avance de un evento"""
     tareas = query(
-        "SELECT COUNT(*) as total, SUM(completada) as completadas FROM tareas WHERE evento_id = %s",
+        "SELECT COUNT(*) as total, SUM(completada) as completadas FROM tareas WHERE evento_id = ?",
         (evento_id,),
         one=True
     )
@@ -117,7 +175,7 @@ def inicio():
     )
 
 # ==============================================================
-# RUTAS HTML - Lista de eventos (CRUD - Read)
+# RUTAS HTML - Lista de eventos
 # ==============================================================
 
 @app.route('/eventos/')
@@ -131,17 +189,17 @@ def lista_eventos():
     )
 
 # ==============================================================
-# RUTAS HTML - Detalle de evento (CRUD - Read)
+# RUTAS HTML - Detalle de evento
 # ==============================================================
 
 @app.route('/eventos/<int:id>/')
 def detalle_evento(id):
     """Detalle completo de un evento con sus tareas"""
-    evento = query("SELECT * FROM eventos WHERE id = %s", (id,), one=True)
+    evento = query("SELECT * FROM eventos WHERE id = ?", (id,), one=True)
     if evento is None:
         abort(404)
     
-    tareas = query("SELECT * FROM tareas WHERE evento_id = %s", (id,))
+    tareas = query("SELECT * FROM tareas WHERE evento_id = ?", (id,))
     porcentaje = calcular_progreso(id)
     
     evento_con_progreso = dict(evento)
@@ -173,17 +231,17 @@ def lista_tareas():
     )
 
 # ==============================================================
-# RUTAS HTML - Detalle de tarea (CRUD - Read)
+# RUTAS HTML - Detalle de tarea
 # ==============================================================
 
 @app.route('/tareas/<int:id>/')
 def detalle_tarea(id):
     """Detalle completo de una tarea"""
-    tarea = query("SELECT * FROM tareas WHERE id = %s", (id,), one=True)
+    tarea = query("SELECT * FROM tareas WHERE id = ?", (id,), one=True)
     if tarea is None:
         abort(404)
     
-    evento = query("SELECT * FROM eventos WHERE id = %s", (tarea['evento_id'],), one=True)
+    evento = query("SELECT * FROM eventos WHERE id = ?", (tarea['evento_id'],), one=True)
     
     return render_template('detalle_tarea.html',
         titulo=f'Detalle: {tarea["titulo"]}',
@@ -192,7 +250,7 @@ def detalle_tarea(id):
     )
 
 # ==============================================================
-# RUTAS HTML - Crear evento (CRUD - Create)
+# RUTAS HTML - Crear evento
 # ==============================================================
 
 @app.route('/eventos/nuevo/', methods=['GET', 'POST'])
@@ -228,7 +286,7 @@ def crear_evento():
         execute(
             """INSERT INTO eventos (nombre, descripcion, fecha_inicio, fecha_fin, 
                ubicacion, tipo_evento, estado) 
-               VALUES (%s, %s, %s, %s, %s, %s, %s)""",
+               VALUES (?, ?, ?, ?, ?, ?, ?)""",
             (nombre, descripcion, fecha_inicio, fecha_fin, ubicacion, tipo_evento, estado)
         )
         return render_template('form_evento.html',
@@ -245,13 +303,13 @@ def crear_evento():
     )
 
 # ==============================================================
-# RUTAS HTML - Editar evento (CRUD - Update)
+# RUTAS HTML - Editar evento
 # ==============================================================
 
 @app.route('/eventos/<int:id>/editar/', methods=['GET', 'POST'])
 def editar_evento(id):
     """Formulario para editar un evento existente"""
-    evento = query("SELECT * FROM eventos WHERE id = %s", (id,), one=True)
+    evento = query("SELECT * FROM eventos WHERE id = ?", (id,), one=True)
     if evento is None:
         abort(404)
     
@@ -287,9 +345,9 @@ def editar_evento(id):
             )
         
         execute(
-            """UPDATE eventos SET nombre=%s, descripcion=%s, fecha_inicio=%s, 
-               fecha_fin=%s, ubicacion=%s, tipo_evento=%s, estado=%s 
-               WHERE id=%s""",
+            """UPDATE eventos SET nombre=?, descripcion=?, fecha_inicio=?, 
+               fecha_fin=?, ubicacion=?, tipo_evento=?, estado=? 
+               WHERE id=?""",
             (nombre, descripcion, fecha_inicio, fecha_fin, ubicacion, tipo_evento, estado, id)
         )
         return render_template('form_evento.html',
@@ -306,18 +364,18 @@ def editar_evento(id):
     )
 
 # ==============================================================
-# RUTAS HTML - Eliminar evento (CRUD - Delete)
+# RUTAS HTML - Eliminar evento
 # ==============================================================
 
 @app.route('/eventos/<int:id>/eliminar/', methods=['GET', 'POST'])
 def eliminar_evento(id):
     """Página de confirmación para eliminar un evento"""
-    evento = query("SELECT * FROM eventos WHERE id = %s", (id,), one=True)
+    evento = query("SELECT * FROM eventos WHERE id = ?", (id,), one=True)
     if evento is None:
         abort(404)
     
     if request.method == 'POST':
-        execute("DELETE FROM eventos WHERE id = %s", (id,))
+        execute("DELETE FROM eventos WHERE id = ?", (id,))
         return render_template('confirmar_eliminar.html',
             titulo='Evento Eliminado',
             mensaje=f'El evento "{evento["nombre"]}" fue eliminado correctamente.',
@@ -325,7 +383,7 @@ def eliminar_evento(id):
             eliminado=True
         )
     
-    tareas = query("SELECT * FROM tareas WHERE evento_id = %s", (id,))
+    tareas = query("SELECT * FROM tareas WHERE evento_id = ?", (id,))
     return render_template('confirmar_eliminar.html',
         titulo='Eliminar Evento',
         evento=evento,
@@ -348,10 +406,10 @@ def filtrar_eventos():
     params = []
     
     if tipo:
-        sql += " AND tipo_evento = %s"
+        sql += " AND tipo_evento = ?"
         params.append(tipo)
     if estado:
-        sql += " AND estado = %s"
+        sql += " AND estado = ?"
         params.append(estado)
     
     sql += " ORDER BY id"
@@ -371,7 +429,7 @@ def filtrar_eventos():
 @app.route('/eventos/<int:evento_id>/tareas/nueva/', methods=['GET', 'POST'])
 def crear_tarea(evento_id):
     """Formulario para crear una nueva tarea"""
-    evento = query("SELECT * FROM eventos WHERE id = %s", (evento_id,), one=True)
+    evento = query("SELECT * FROM eventos WHERE id = ?", (evento_id,), one=True)
     if evento is None:
         abort(404)
     
@@ -413,8 +471,8 @@ def crear_tarea(evento_id):
         
         execute(
             """INSERT INTO tareas (titulo, descripcion, evento_id, encargado, fecha_limite, completada) 
-               VALUES (%s, %s, %s, %s, %s, %s)""",
-            (titulo, descripcion, evento_id, encargado, fecha_limite, False)
+               VALUES (?, ?, ?, ?, ?, ?)""",
+            (titulo, descripcion, evento_id, encargado, fecha_limite, 0)
         )
         return render_template('form_tarea.html',
             titulo='Crear Tarea',
@@ -438,11 +496,11 @@ def crear_tarea(evento_id):
 @app.route('/tareas/<int:id>/editar/', methods=['GET', 'POST'])
 def editar_tarea(id):
     """Formulario para editar una tarea"""
-    tarea = query("SELECT * FROM tareas WHERE id = %s", (id,), one=True)
+    tarea = query("SELECT * FROM tareas WHERE id = ?", (id,), one=True)
     if tarea is None:
         abort(404)
     
-    evento = query("SELECT * FROM eventos WHERE id = %s", (tarea['evento_id'],), one=True)
+    evento = query("SELECT * FROM eventos WHERE id = ?", (tarea['evento_id'],), one=True)
     
     if request.method == 'POST':
         titulo = request.form.get('titulo', '').strip()
@@ -488,8 +546,8 @@ def editar_tarea(id):
             )
         
         execute(
-            """UPDATE tareas SET titulo=%s, descripcion=%s, encargado=%s, 
-               fecha_limite=%s, completada=%s WHERE id=%s""",
+            """UPDATE tareas SET titulo=?, descripcion=?, encargado=?, 
+               fecha_limite=?, completada=? WHERE id=?""",
             (titulo, descripcion, encargado, fecha_limite, completada, id)
         )
         return render_template('form_tarea.html',
@@ -514,14 +572,14 @@ def editar_tarea(id):
 @app.route('/tareas/<int:id>/eliminar/', methods=['GET', 'POST'])
 def eliminar_tarea(id):
     """Página de confirmación para eliminar una tarea"""
-    tarea = query("SELECT * FROM tareas WHERE id = %s", (id,), one=True)
+    tarea = query("SELECT * FROM tareas WHERE id = ?", (id,), one=True)
     if tarea is None:
         abort(404)
     
-    evento = query("SELECT * FROM eventos WHERE id = %s", (tarea['evento_id'],), one=True)
+    evento = query("SELECT * FROM eventos WHERE id = ?", (tarea['evento_id'],), one=True)
     
     if request.method == 'POST':
-        execute("DELETE FROM tareas WHERE id = %s", (id,))
+        execute("DELETE FROM tareas WHERE id = ?", (id,))
         return render_template('confirmar_eliminar.html',
             titulo='Tarea Eliminada',
             mensaje=f'La tarea "{tarea["titulo"]}" fue eliminada correctamente.',
@@ -559,11 +617,11 @@ def api_lista_eventos():
 @app.route('/api/eventos/<int:id>/')
 def api_detalle_evento(id):
     """API: Obtener un evento específico con sus tareas y porcentaje"""
-    evento = query("SELECT * FROM eventos WHERE id = %s", (id,), one=True)
+    evento = query("SELECT * FROM eventos WHERE id = ?", (id,), one=True)
     if evento is None:
         return jsonify({'error': 'Evento no encontrado', 'id': id}), 404
     
-    tareas = query("SELECT * FROM tareas WHERE evento_id = %s", (id,))
+    tareas = query("SELECT * FROM tareas WHERE evento_id = ?", (id,))
     porcentaje = calcular_progreso(id)
     
     resultado = dict(evento)
@@ -607,12 +665,12 @@ def api_crear_evento():
     nuevo_id = execute(
         """INSERT INTO eventos (nombre, descripcion, fecha_inicio, fecha_fin, 
            ubicacion, tipo_evento, estado) 
-           VALUES (%s, %s, %s, %s, %s, %s, %s)""",
+           VALUES (?, ?, ?, ?, ?, ?, ?)""",
         (nombre, datos.get('descripcion', ''), fecha_inicio, fecha_fin, 
          datos.get('ubicacion', ''), tipo_evento, estado)
     )
     
-    nuevo = query("SELECT * FROM eventos WHERE id = %s", (nuevo_id,), one=True)
+    nuevo = query("SELECT * FROM eventos WHERE id = ?", (nuevo_id,), one=True)
     return jsonify({
         'mensaje': 'Evento creado correctamente',
         'evento': nuevo
@@ -625,7 +683,7 @@ def api_crear_evento():
 @app.route('/api/eventos/<int:id>/', methods=['PUT'])
 def api_actualizar_evento(id):
     """API: Actualizar un evento existente"""
-    evento = query("SELECT * FROM eventos WHERE id = %s", (id,), one=True)
+    evento = query("SELECT * FROM eventos WHERE id = ?", (id,), one=True)
     if evento is None:
         return jsonify({'error': 'Evento no encontrado', 'id': id}), 404
     
@@ -654,15 +712,15 @@ def api_actualizar_evento(id):
         return jsonify({'error': 'Estado inválido'}), 400
     
     execute(
-        """UPDATE eventos SET nombre=%s, descripcion=%s, fecha_inicio=%s, 
-           fecha_fin=%s, ubicacion=%s, tipo_evento=%s, estado=%s 
-           WHERE id=%s""",
+        """UPDATE eventos SET nombre=?, descripcion=?, fecha_inicio=?, 
+           fecha_fin=?, ubicacion=?, tipo_evento=?, estado=? 
+           WHERE id=?""",
         (nombre, datos.get('descripcion', evento['descripcion']), 
          fecha_inicio, fecha_fin, datos.get('ubicacion', evento['ubicacion']), 
          tipo_evento, estado, id)
     )
     
-    actualizado = query("SELECT * FROM eventos WHERE id = %s", (id,), one=True)
+    actualizado = query("SELECT * FROM eventos WHERE id = ?", (id,), one=True)
     return jsonify({
         'mensaje': 'Evento actualizado correctamente',
         'evento': actualizado
@@ -675,11 +733,11 @@ def api_actualizar_evento(id):
 @app.route('/api/eventos/<int:id>/', methods=['DELETE'])
 def api_eliminar_evento(id):
     """API: Eliminar un evento"""
-    evento = query("SELECT * FROM eventos WHERE id = %s", (id,), one=True)
+    evento = query("SELECT * FROM eventos WHERE id = ?", (id,), one=True)
     if evento is None:
         return jsonify({'error': 'Evento no encontrado', 'id': id}), 404
     
-    execute("DELETE FROM eventos WHERE id = %s", (id,))
+    execute("DELETE FROM eventos WHERE id = ?", (id,))
     return jsonify({
         'mensaje': f'Evento "{evento["nombre"]}" eliminado correctamente',
         'id': id
@@ -705,11 +763,11 @@ def api_lista_tareas():
 @app.route('/api/tareas/<int:id>/')
 def api_detalle_tarea(id):
     """API: Obtener una tarea específica"""
-    tarea = query("SELECT * FROM tareas WHERE id = %s", (id,), one=True)
+    tarea = query("SELECT * FROM tareas WHERE id = ?", (id,), one=True)
     if tarea is None:
         return jsonify({'error': 'Tarea no encontrada', 'id': id}), 404
     
-    evento = query("SELECT * FROM eventos WHERE id = %s", (tarea['evento_id'],), one=True)
+    evento = query("SELECT * FROM eventos WHERE id = ?", (tarea['evento_id'],), one=True)
     resultado = dict(tarea)
     resultado['evento_nombre'] = evento['nombre'] if evento else None
     
@@ -732,7 +790,7 @@ def api_crear_tarea():
         return jsonify({'error': 'El campo título es obligatorio'}), 400
     
     evento_id = datos.get('evento_id')
-    evento = query("SELECT * FROM eventos WHERE id = %s", (evento_id,), one=True)
+    evento = query("SELECT * FROM eventos WHERE id = ?", (evento_id,), one=True)
     if evento is None:
         return jsonify({'error': 'El evento asociado no existe'}), 400
     
@@ -746,12 +804,12 @@ def api_crear_tarea():
     
     nuevo_id = execute(
         """INSERT INTO tareas (titulo, descripcion, evento_id, encargado, fecha_limite, completada) 
-           VALUES (%s, %s, %s, %s, %s, %s)""",
+           VALUES (?, ?, ?, ?, ?, ?)""",
         (titulo, datos.get('descripcion', ''), evento_id, encargado, fecha_limite, 
-         datos.get('completada', False))
+         datos.get('completada', 0))
     )
     
-    nueva = query("SELECT * FROM tareas WHERE id = %s", (nuevo_id,), one=True)
+    nueva = query("SELECT * FROM tareas WHERE id = ?", (nuevo_id,), one=True)
     return jsonify({
         'mensaje': 'Tarea creada correctamente',
         'tarea': nueva
@@ -764,7 +822,7 @@ def api_crear_tarea():
 @app.route('/api/tareas/<int:id>/', methods=['PUT'])
 def api_actualizar_tarea(id):
     """API: Actualizar una tarea"""
-    tarea = query("SELECT * FROM tareas WHERE id = %s", (id,), one=True)
+    tarea = query("SELECT * FROM tareas WHERE id = ?", (id,), one=True)
     if tarea is None:
         return jsonify({'error': 'Tarea no encontrada', 'id': id}), 404
     
@@ -780,20 +838,20 @@ def api_actualizar_tarea(id):
     if not encargado:
         return jsonify({'error': 'El campo encargado no puede quedar vacío'}), 400
     
-    evento = query("SELECT * FROM eventos WHERE id = %s", (tarea['evento_id'],), one=True)
+    evento = query("SELECT * FROM eventos WHERE id = ?", (tarea['evento_id'],), one=True)
     fecha_limite = datos.get('fecha_limite', tarea['fecha_limite'])
     
     if fecha_limite and fecha_limite > str(evento['fecha_fin']):
         return jsonify({'error': f'La fecha límite no puede ser posterior a {evento["fecha_fin"]}'}), 400
     
     execute(
-        """UPDATE tareas SET titulo=%s, descripcion=%s, encargado=%s, 
-           fecha_limite=%s, completada=%s WHERE id=%s""",
+        """UPDATE tareas SET titulo=?, descripcion=?, encargado=?, 
+           fecha_limite=?, completada=? WHERE id=?""",
         (titulo, datos.get('descripcion', tarea['descripcion']), 
          encargado, fecha_limite, datos.get('completada', tarea['completada']), id)
     )
     
-    actualizada = query("SELECT * FROM tareas WHERE id = %s", (id,), one=True)
+    actualizada = query("SELECT * FROM tareas WHERE id = ?", (id,), one=True)
     return jsonify({
         'mensaje': 'Tarea actualizada correctamente',
         'tarea': actualizada
@@ -806,11 +864,11 @@ def api_actualizar_tarea(id):
 @app.route('/api/tareas/<int:id>/', methods=['DELETE'])
 def api_eliminar_tarea(id):
     """API: Eliminar una tarea"""
-    tarea = query("SELECT * FROM tareas WHERE id = %s", (id,), one=True)
+    tarea = query("SELECT * FROM tareas WHERE id = ?", (id,), one=True)
     if tarea is None:
         return jsonify({'error': 'Tarea no encontrada', 'id': id}), 404
     
-    execute("DELETE FROM tareas WHERE id = %s", (id,))
+    execute("DELETE FROM tareas WHERE id = ?", (id,))
     return jsonify({
         'mensaje': f'Tarea "{tarea["titulo"]}" eliminada correctamente',
         'id': id
@@ -859,10 +917,10 @@ def api_filtrar_eventos():
     params = []
     
     if tipo:
-        sql += " AND tipo_evento = %s"
+        sql += " AND tipo_evento = ?"
         params.append(tipo)
     if estado:
-        sql += " AND estado = %s"
+        sql += " AND estado = ?"
         params.append(estado)
     
     sql += " ORDER BY id"
@@ -886,8 +944,8 @@ def pagina_no_encontrada(e):
     return render_template('404.html', titulo='Página no encontrada'), 404
 
 # ==============================================================
-# INICIO DEL SERVIDOR
+# INICIO DEL SERVIDOR (PythonAnywhere usa la variable 'app')
 # ==============================================================
 
-if __name__ == '__main__':
-    app.run(debug=True, port=5000)
+# PythonAnywhere usa la variable 'app' como punto de entrada
+# No se necesita app.run() en producción
